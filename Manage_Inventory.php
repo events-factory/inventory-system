@@ -55,7 +55,7 @@ $categories_result = $conn->query("SELECT category_id, category_name FROM catego
             <span>Orders</span>
           </div>
         </a>
-        <a href="Manage_inventory.php" class="nav-link">
+        <a href="Manage_Inventory.php" class="nav-link">
           <div class="nav-item active">
             <i class="icon"></i>
             <span>Manage Store</span>
