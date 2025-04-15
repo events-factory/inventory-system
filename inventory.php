@@ -74,7 +74,7 @@ $categories_result = $conn->query("SELECT category_id, category_name FROM catego
             <span>Orders</span>
           </div>
         </a>
-        <a href="Manage_Inventory.php" class="nav-link">
+        <a href="Manage_inventory.php" class="nav-link">
           <div class="nav-item">
             <i class="icon"></i>
             <span>Manage Store</span>
@@ -156,7 +156,20 @@ $categories_result = $conn->query("SELECT category_id, category_name FROM catego
                                     <option value="">Select Subcategory</option>
                                 </select>                              
                             </div>
-                            <a href="new_item.php" class="edit-button"> Add Item </a>
+                            <!-- <a href="new_item.php" class="edit-button"> Add Item </a> -->
+
+                            <div class="download-dropdown">
+                                <button class="download-button">Create ▼</button>
+                                <div class="download-content">
+                                <div class="download-content">
+                                    <a href="new_category.php">Add Category</a>
+                                    <a href="new_subcategory.php">Add SubCategory</a>
+                                    <a href="new_group.php">Add group</a>
+                                    <a href="new_item.php">Add Item</a>
+                                </div>
+                                </div>
+                            </div> 
+                            
                             <button class="download-button">Download</button>                              
                         </div>
                     </div>
@@ -197,7 +210,17 @@ $categories_result = $conn->query("SELECT category_id, category_name FROM catego
                                     <option value="">Select Group</option>
                                 </select>
                             </div>
-                            <a href="new_item.php" class="edit-button"> Add Item </a>
+
+                            <div class="download-dropdown">
+                                <button class="download-button">Create ▼</button>
+                                <div class="download-content">
+                                    <a href="new_category.php">Add Category</a>
+                                    <a href="new_subcategory.php">Add SubCategory</a>
+                                    <a href="new_group.php">Add group</a>
+                                    <a href="new_item.php">Add Item</a>
+                                </div>
+                            </div> 
+                                                        
                             <button class="download-button">Download</button>                              
                         </div>
                     </div>
