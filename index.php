@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($user['role_id'] == 1) {
                 header("Location: dashboard.php");
             } elseif ($user['role_id'] == 2) {
-                header("Location: Manage_inventory.php");
+                header("Location: Manage_Inventory.php");
             } elseif ($user['role_id'] == 3) {
                 header("Location: orders.php");
             }
