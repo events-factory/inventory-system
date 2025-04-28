@@ -12,6 +12,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
+    echo '<option value=""></option>';
     while($row = $result->fetch_assoc()) {
         echo '<option value="' . $row['sub_category_id'] . '">' . $row['sub_category_name'] . '</option>';
     }

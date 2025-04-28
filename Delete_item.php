@@ -54,7 +54,6 @@ $rental_history_result = $conn->query($rental_history_sql);
     <link rel="stylesheet" href="styles.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
   </head>
   <body>
     <!-- Sidebar (common) -->
@@ -261,6 +260,7 @@ $rental_history_result = $conn->query($rental_history_sql);
               ?>
             </tbody>
           </table>
+          <div id="table2Pagination" class="pagination"></div>
         </div>
       </div>
     </div>
@@ -274,7 +274,7 @@ $rental_history_result = $conn->query($rental_history_sql);
               deleteBtn.addEventListener("click", function () {
                   Swal.fire({
                     title: "Are you sure?",
-                    text: "This item and its entries will be permanently deleted!",
+                    text: "This item and it's entries will be permanently deleted!",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: "Delete",
@@ -335,5 +335,9 @@ $rental_history_result = $conn->query($rental_history_sql);
           }
       });
     </script>
+    <script>
+        const table2 = document.getElementById('table2');     
+        setupPagination(table2, document.getElementById('table2Pagination'));     
+    </script>     
   </body>
 </html>

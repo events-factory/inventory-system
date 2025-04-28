@@ -180,7 +180,9 @@ $conn->close();
                 </div>
 
                 <div class="button-container">
+                  <a href="inventory.php" >
                     <button type="button" class="button-secondary">Discard</button>
+                  </a>
                     <button type="submit" class="button-primary">Add Item</button>
                 </div>
             </form>

@@ -204,7 +204,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       
       $mail->setFrom('eventsfactorysystem@gmail.com', 'Inventory System');
       $mail->addReplyTo('info@eventsfactory.rw', 'Events Factory Support');
-      $mail->addAddress('ntegeoscar9@gmail.com', 'Admin');
+      $mail->addAddress('danganza266@gmail.com', 'Admin');
       
       $mail->Subject = "New Requisition Created (ID: $req_id)";
       $mail->Body = "Hello Admin,\n\nA new requisition has been created. The details are attached as a PDF.\n\nBest Regards,\nInventory System";
