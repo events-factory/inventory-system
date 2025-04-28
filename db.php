@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";
 $username = "root";
-$password = "root";
+$password = "";
 $database = "events_factory_test";
 
 $conn = new mysqli($host, $username, $password, $database);
