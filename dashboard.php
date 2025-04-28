@@ -137,7 +137,7 @@ $lowStock = $conn->query($lowStockQuery);
             <span>Orders</span>
           </div>
         </a>
-        <a href="Manage_Inventory.php" class="nav-link">
+        <a href="Manage_inventory.php" class="nav-link">
           <div class="nav-item">
             <i class="icon"></i>
             <span>Manage Store</span>

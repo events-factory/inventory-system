@@ -76,3 +76,93 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+
+
+
+
+
+
+
+
+
+const groupCategoryFilter = document.getElementById("groupCategoryFilter");
+const groupSubcategoryFilter = document.getElementById("groupSubcategoryFilter");
+
+groupCategoryFilter.addEventListener("change", function () {
+    const categoryId = this.value;
+    groupSubcategoryFilter.innerHTML = '<option value="">Select Subcategory</option>';
+    groupSubcategoryFilter.disabled = true;
+
+    if (categoryId) {
+        fetch(`fetch_data.php?action=get_subcategories&category_id=${categoryId}`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(sub => {
+                    groupSubcategoryFilter.innerHTML += `<option value="${sub.sub_category_id}">${sub.sub_category_name}</option>`;
+                });
+                groupSubcategoryFilter.disabled = false;
+            })
+            .catch(error => console.error("Error fetching subcategories for Group Table:", error));
+    }
+});
+
+groupSubcategoryFilter.addEventListener("change", function () {
+    const subcategoryId = this.value;
+
+    if (subcategoryId) {
+        // Fetch groups belonging to this subcategory (if you're displaying groups dynamically)
+        fetch(`fetch_data.php?action=get_groups&subcategory_id=${subcategoryId}`)
+            .then(response => response.json())
+            .then(data => {
+                const groupTableBody = document.querySelector("#table2 tbody");
+                groupTableBody.innerHTML = "";
+                data.forEach(group => {
+                    groupTableBody.innerHTML += `
+                        <tr>
+                            <td>${group.group_id}</td>
+                            <td>${group.group_name}</td>
+                            ${USER_ROLE === 1 ? `
+                            <td><a href="Update_group.php?id=${group.group_id}" class="btn"><button type="button">Update</button></a></td>
+                            <td><a href="Delete_group.php?id=${group.group_id}" class="btn"><button type="button">Delete</button></a></td>` : `
+                            <td></td><td></td>`
+                            }
+                        </tr>`;
+                });
+                
+                setupPagination(document.getElementById('table2'), document.getElementById('table2Pagination'));
+            })
+            .catch(error => console.error("Error fetching groups:", error));
+    }
+});
+
+
+
+const subCatCategoryFilter = document.getElementById("subCategoryCategoryFilter");
+
+subCatCategoryFilter.addEventListener("change", function () {
+    const categoryId = this.value;
+    const subTableBody = document.querySelector("#table3 tbody");
+
+    if (categoryId) {
+        fetch(`fetch_data.php?action=get_subcategories&category_id=${categoryId}`)
+            .then(response => response.json())
+            .then(data => {
+                subTableBody.innerHTML = "";
+                data.forEach(sub => {
+                    subTableBody.innerHTML += `
+                        <tr>
+                            <td>${sub.sub_category_id}</td>
+                            <td>${sub.sub_category_name}</td>
+                            ${USER_ROLE === 1 ? `
+                            <td><a href="Update_sub.php?id=${sub.sub_category_id}" class="btn"><button type="button">Update</button></a></td>
+                            <td><a href="Delete_sub.php?id=${sub.sub_category_id}" class="btn"><button type="button">Delete</button></a></td>` : ` 
+                            <td></td><td></td>`
+                            }                            
+                        </tr>`;
+                });
+                setupPagination(document.getElementById('table3'), document.getElementById('table3Pagination'));
+            })
+            .catch(error => console.error("Error fetching subcategories for Subcategory Table:", error));
+    }
+});

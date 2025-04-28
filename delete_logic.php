@@ -1,4 +1,11 @@
 <?php
+require 'session_check.php';
+
+// Only allow Operator & Super Admin
+if ($user_role != 1 && $user_role != 2) {
+    echo "❌ Access Denied!";
+    exit;
+}
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {

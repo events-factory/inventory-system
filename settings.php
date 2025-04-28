@@ -105,7 +105,7 @@ $users = $result->fetch_all(MYSQLI_ASSOC);
         <a href="reports.php" class="nav-link"><div class="nav-item "><i class="icon"></i><span>Reports</span></div></a>
         <a href="requisitions.php" class="nav-link"><div class="nav-item"><i class="icon"></i><span>Requisitions</span></div></a>
         <a href="orders.php" class="nav-link"><div class="nav-item"><i class="icon"></i><span>Orders</span></div></a>
-        <a href="Manage_Inventory.php" class="nav-link"><div class="nav-item"><i class="icon"></i><span>Manage Store</span></div></a>
+        <a href="Manage_inventory.php" class="nav-link"><div class="nav-item"><i class="icon"></i><span>Manage Store</span></div></a>
         <a href="settings.php" class="nav-link"><div class="nav-item active"><i class="icon"></i><span>Settings</span></div></a>
                 <a href="logout.php" class="nav-link">
           <div class="nav-item">
@@ -162,7 +162,7 @@ $users = $result->fetch_all(MYSQLI_ASSOC);
             <!-- Users List -->
             <div class="card">
                 <h4>Existing Users</h4>
-                <table>
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Name</th>

@@ -134,7 +134,7 @@ $orders_result = $conn->query($orders_sql);
         </a>
 
       <?php if (isset($_SESSION['role_id']) && $_SESSION['role_id'] != 3): ?>  
-        <a href="Manage_Inventory.php" class="nav-link">
+        <a href="Manage_inventory.php" class="nav-link">
           <div class="nav-item">
             <i class="icon"></i>
             <span>Manage Store</span>

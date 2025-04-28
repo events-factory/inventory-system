@@ -155,7 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?= $feedback; ?>
                 </div>
             <?php endif; ?>
-            <h1 value=<?= $item['item_name'] ?>>hhhh<h1>
             <form action="Update_item.php?id=<?= $item_id; ?>" method="post">
                 <div class="form-group">
                     <label for="itemName">Item Name</label>

@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mail->setFrom('eventsfactorysystem@gmail.com', 'Inventory System');
             $mail->addReplyTo('info@eventsfactory.rw', 'Events Factory Support');
-            $mail->addAddress('ntegeoscar9@gmail.com', 'StoreKeeper');
+            $mail->addAddress('danganza266@gmail.com', 'StoreKeeper');
 
             $mail->Subject = "New Order Created (ID: $order_id)";
             $mail->Body = "
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mail->setFrom('eventsfactorysystem@gmail.com', 'Inventory System');
             $mail->addReplyTo('info@eventsfactory.rw', 'Events Factory Support');
-            $mail->addAddress('ntegeoscar9@gmail.com', 'Operator'); // Operator email address
+            $mail->addAddress('danganza266@gmail.com', 'Operator'); // Operator email address
 
             $mail->Subject = "Your Requisition Has Been Rejected";
             $mail->Body = "

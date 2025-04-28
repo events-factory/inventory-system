@@ -27,10 +27,19 @@ function fetchSubcategories(categoryId) {
     xhr.open('POST', 'subcategories.php', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onload = function() {
-        document.getElementById('itemSubCategory').innerHTML = this.responseText;
+        var subCategoryDropdown = document.getElementById('itemSubCategory');
+        subCategoryDropdown.innerHTML = this.responseText;
+
+        // Automatically trigger change if only one option (besides empty)
+        var options = subCategoryDropdown.querySelectorAll('option');
+        if (options.length === 2) {
+            subCategoryDropdown.selectedIndex = 1; // Select the only available subcategory
+            subCategoryDropdown.dispatchEvent(new Event('change')); // Trigger change event
+        }
     };
     xhr.send('category_id=' + categoryId);
 }
+
 
 // Function to fetch groups via AJAX
 function fetchGroups(subcategoryId) {
