@@ -1,6 +1,6 @@
 <?php
 
-require 'session_check.php';
+//require 'session_check.php';
 
 // Only allow Operator & Super Admin
 
