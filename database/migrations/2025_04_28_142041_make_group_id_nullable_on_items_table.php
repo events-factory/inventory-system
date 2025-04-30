@@ -12,13 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
+            // Make the foreignId nullable
             $table->foreignId('group_id')->nullable()->change();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('items', function (Blueprint $table) {
+            // Make the foreignId non-nullable again
             $table->foreignId('group_id')->nullable(false)->change();
         });
     }

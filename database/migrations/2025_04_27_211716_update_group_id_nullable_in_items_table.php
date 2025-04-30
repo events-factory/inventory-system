@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            //
+            // Add a new column for 'description' to the 'items' table
+            $table->text('description')->nullable();
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            //
+            // Drop the 'description' column if the migration is rolled back
+            $table->dropColumn('description');
         });
     }
 };
