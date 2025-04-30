@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('groups', function (Blueprint $table) {
-            $table->id();
-        $table->string('name');
-        $table->foreignId('subcategory_id')
-            ->constrained('subcategories')
-            ->onDelete('cascade'); 
-        $table->timestamps();
-        });
+        if (!Schema::hasTable('groups')) {
+            Schema::create('groups', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->foreignId('subcategory_id')
+                    ->constrained('subcategories')
+                    ->cascadeOnDelete();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
