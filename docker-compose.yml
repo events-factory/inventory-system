@@ -14,11 +14,12 @@ services:
       - ./:/var/www/html
     env_file:
       - .env
-    command: >
+   docker-compose.yml
       bash -c "
         composer install &&
         cp .env .env.backup &&
         php artisan config:clear &&
+        php artisan key:generate &&
         php artisan migrate --force &&
         php artisan db:seed --force &&
         php artisan serve --host=0.0.0.0 --port=8000
