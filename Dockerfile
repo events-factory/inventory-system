@@ -1,6 +1,5 @@
 FROM php:8.2-fpm
 
-# Set working directory
 WORKDIR /var/www
 
 # Install system dependencies
@@ -18,13 +17,13 @@ RUN apt-get update && apt-get install -y \
 # Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy the application code
+# Copy Laravel project files
 COPY . .
 
 # Install Laravel dependencies
 RUN composer install --no-interaction --optimize-autoloader --prefer-dist
 
-# Set Laravel file permissions
+# Set file permissions
 RUN chown -R www-data:www-data /var/www
 
 EXPOSE 9000

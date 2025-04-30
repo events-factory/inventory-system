@@ -3,15 +3,16 @@ version: '3.8'
 services:
   app:
     build:
-      context: .  # This tells Docker to use the current directory as context for the build.
-      dockerfile: Dockerfile  # Explicitly use the Dockerfile you provided.
+      context: .
+      dockerfile: Dockerfile
     container_name: laravel-app
     restart: unless-stopped
     working_dir: /var/www/html
     ports:
-      - "9000:8000"
+      - "9000:8000"  # internal:external
     volumes:
       - ./:/var/www/html
+      - ./public:/var/www/html/public  # Ensures Apache can serve static files
     env_file:
       - .env
     command: >
@@ -23,4 +24,3 @@ services:
         php artisan db:seed --force &&
         php artisan serve --host=0.0.0.0 --port=8000
       "
-
