@@ -13,17 +13,17 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-    $table->string('event_name');
-    $table->date('event_date');
-    $table->string('event_location');
-    $table->string('event_type');
-    $table->string('customer');
-    $table->string('responsible_person_name');
-    $table->string('responsible_person_phone');
-    $table->string('responsible_person_email');
-    $table->enum('urgency', ['low', 'medium', 'high']);
-    $table->text('notes')->nullable();
-    $table->timestamps();
+            $table->string('event_name');
+            $table->date('event_date');
+            $table->string('event_location');
+            $table->string('event_type');
+            $table->string('customer');
+            $table->string('responsible_person_name');
+            $table->string('responsible_person_phone');
+            $table->string('responsible_person_email');
+            $table->enum('urgency', ['low', 'medium', 'high']);
+            $table->text('notes')->nullable();
+            $table->timestamps();
         });
     }
 
