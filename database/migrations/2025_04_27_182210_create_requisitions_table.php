@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->foreignId('subcategory_id')->constrained()->onDelete('cascade');
             $table->foreignId('group_id')->constrained()->onDelete('cascade');
-            $table->json('item_id')->onDelete('cascade');
+            $table->longText('item_id');  // Change from JSON to longText
 
             $table->integer('number_of_items');
 
@@ -34,4 +34,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('requisitions');
     }
+
 };

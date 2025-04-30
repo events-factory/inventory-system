@@ -13,12 +13,19 @@ return new class extends Migration
     {
         Schema::create('item_requisition', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('item_id')->constrained()->onDelete('cascade');
-            $table->foreignId('requisition_id')->constrained()->onDelete('cascade');
+            $table->foreignId('item_id')
+                  ->constrained('items')  // Explicitly define the related table
+                  ->onDelete('cascade');
+            $table->foreignId('requisition_id')
+                  ->constrained('requisitions')  // Explicitly define the related table
+                  ->onDelete('cascade');
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('item_requisition');
