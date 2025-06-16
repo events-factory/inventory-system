@@ -3,187 +3,174 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
-use App\Models\Category;
+use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
-use App\Models\Group;
 use App\Models\Item;
-use App\Models\Subcategory;
+use App\Models\User;
+use Closure;
+use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Section;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\BulkActionGroup;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class EventResource extends Resource
 {
     protected static ?string $model = Event::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Section::make('Event Details')
-                    ->schema([
-                        TextInput::make('event_name')
-                            ->required()
-                            ->label('Event Name'),
+public static function form(Forms\Form $form): Forms\Form
+{
+    return $form
+        ->schema([
+            TextInput::make('event_name')
+                ->required()
+                ->label('Event Name'),
+            DatePicker::make('event_date')
+                ->required()
+                ->label('Event Date'),
+            TextInput::make('event_location')
+                ->required()
+                ->label('Event Location'),
+            TextInput::make('customer')
+                ->required()
+                ->label('Customer'),
+            TextInput::make('responsible_person_name')
+                ->required()
+                ->label('Responsible Person Name'),
+            TextInput::make('responsible_person_phone')
+                ->required()
+                ->label('Responsible Person Phone'),
+            TextInput::make('responsible_person_email')
+                ->required()
+                ->label('Responsible Person Email'),
+            Select::make('urgency')
+                ->options([
+                    'low' => 'Low',
+                    'medium' => 'Medium',
+                    'high' => 'High',
+                ])
+                ->required()
+                ->label('Urgency'),
+            Textarea::make('notes')
+                ->label('Notes'),
 
-                        DatePicker::make('event_date')
-                            ->required()
-                            ->label('Event Date'),
+            // Requisition Fields - Bind to Event's Requisition
+            DatePicker::make('requisition.expected_pickup_date')
+                ->required()
+                ->label('Expected Pickup Date')
+                ->default(fn ($record) => $record->requisition->expected_pickup_date ?? null),
+            DatePicker::make('requisition.expected_return_date')
+                ->required()
+                ->label('Expected Return Date')
+                ->default(fn ($record) => $record->requisition->expected_return_date ?? null),
 
-                        TextInput::make('event_location')
-                            ->required()
-                            ->label('Event Location'),
-
-                        TextInput::make('event_type')
-                            ->required()
-                            ->label('Event Type'),
-
-                        TextInput::make('customer')
-                            ->required()
-                            ->label('Customer'),
-
-                        TextInput::make('responsible_person_name')
-                            ->required()
-                            ->label('Responsible Person Name'),
-
-                        TextInput::make('responsible_person_phone')
-                            ->required()
-                            ->label('Responsible Person Phone'),
-
-                        TextInput::make('responsible_person_email')
-                            ->required()
-                            ->email()
-                            ->label('Responsible Person Email'),
-
-                        Select::make('urgency')
-                            ->options([
-                                'low' => 'Low',
-                                'medium' => 'Medium',
-                                'high' => 'High',
-                            ])
-                            ->required()
-                            ->label('Urgency'),
-
-                        Textarea::make('notes')
-                            ->nullable()
-                            ->label('Notes'),
-                    ]),
-
-                    Section::make('Requisition Details')
-    ->schema([
-        DatePicker::make('requisition_expected_pickup_date')
-            ->required()
-            ->label('Expected Pick-Up Date'),
-
-        DatePicker::make('requisition_expected_return_date')
-            ->required()
-            ->label('Expected Return Date'),
-
-        Select::make('requisition_category_id')
-    ->options(Category::all()->pluck('name', 'id')) // Fetch categories from the database
+            // Repeater for Items - Bind to Event's Requisition Items
+            Repeater::make('requisition.items') // Repeater for multiple items
+                ->schema([
+                    Select::make('item_id') // Select item
+                        ->label('Item')
+                        ->options(function () {
+                            return Item::all()->pluck('name', 'id');
+                        })
+                        ->searchable()
+                        ->required(),
+                    TextInput::make('pivot.quantity')
+    ->label('Quantity')
+    ->numeric()
     ->required()
-    ->label('Category')
-    ->reactive()
-    ->afterStateUpdated(function (callable $set) {
-        // Only reset subcategory when category changes, but don't reset items
-        $set('requisition_subcategory_id', null); 
-    }),
+    ->rules([
+    function (\Filament\Forms\Get $get) {
+        return function (string $attribute, $value, Closure $fail) use ($get) {
+            $itemId = $get('item_id'); // Get selected item in this row
 
-Select::make('requisition_subcategory_id')
-    ->options(function (callable $get) {
-        $categoryId = $get('requisition_category_id');
-        return Subcategory::where('category_id', $categoryId)->pluck('name', 'id');
-    })
-    ->required()
-    ->label('Subcategory')
-    ->reactive()
-    ->afterStateUpdated(function (callable $set) {
-        // Don't reset items when subcategory changes
-    }),
-
-        // Select Group
-        Select::make('requisition_group_id')
-            ->options(function (callable $get) {
-                $subcategoryId = $get('requisition_subcategory_id');
-                
-                if ($subcategoryId) {
-                    // Get the unique group_ids from the items table
-                    $groupIds = Item::where('subcategory_id', $subcategoryId)
-                        ->pluck('group_id')
-                        ->unique(); // Get unique group_ids
-
-                    // Fetch group names from the Group model using the unique group_ids
-                    return Group::whereIn('id', $groupIds)
-                        ->pluck('name', 'id') // Fetch group_name based on the group_id
-                        ->toArray();
+            if ($itemId) {
+                $item = \App\Models\Item::find($itemId);
+                if ($item && $value > $item->quantity) {
+                    $fail("Only {$item->quantity} available in stock.");
                 }
+            }
+        };
+    },
+]),
 
-                return []; // Return empty if no subcategory is selected
-            })
-            ->nullable() // Make this field optional
-            ->label('Group'),
+                ])
+                ->label('Select Items and Quantity')
+                ->columns(2)
+                ->default(fn ($record) => $record->requisition->items ?? [])
+                ->required(),
+        ]);
+}
 
-        TextInput::make('number_of_items')
-            ->numeric()
-            ->required()
-            ->label('Number of Items'),
-        // Items selection
-Select::make('requisition_item_ids')
-    ->multiple() 
-    ->options(function (callable $get) {
-        $categoryId = $get('requisition_category_id');
-        $subcategoryId = $get('requisition_subcategory_id');
-        return Item::where('category_id', $categoryId)
-            ->where('subcategory_id', $subcategoryId)
-            ->pluck('name', 'id');
-    })
-    ->reactive()
-    ->label('Items'),
-    ]),
-
-            ]);
-    }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('event_name')->label('Event Name'),
-                Tables\Columns\TextColumn::make('event_date')->label('Event Date'),
-                Tables\Columns\TextColumn::make('event_location')->label('Location'),
-                Tables\Columns\TextColumn::make('urgency')->label('Urgency'),
-                Tables\Columns\TextColumn::make('created_at')->label('Created At')->dateTime(),
+                // Your existing table columns
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('event_name')
+                    ->label('Event Name')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('event_date')
+                    ->label('Event Date')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('event_location')
+                    ->label('Event Location')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('customer')
+                    ->label('Customer')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('responsible_person_name')
+                    ->label('Responsible Person Name')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('responsible_person_phone')
+                    ->label('Responsible Person Phone')
+                    ->sortable()
+                    ->searchable(),
+
+            ])->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ])
             ->filters([
-                // Add filters here if needed
-            ])
-            ->actions([
-                EditAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                // Your filters
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            // You can add relationships here if needed
-        ];
-    }
+    protected static function booted()
+{
+    static::created(function ($event) {
+        $event->requisition()->create([
+            'event_id' => $event->id,
+            'expected_pickup_date' => $event->expected_pickup_date, // Use the value from the form
+            'expected_return_date' => $event->expected_return_date, // Use the value from the form
+            'status' => 'pending', // initial status
+        ]);
+    });
+}
 
     public static function getPages(): array
     {
@@ -193,4 +180,44 @@ Select::make('requisition_item_ids')
             'edit' => Pages\EditEvent::route('/{record}/edit'),
         ];
     }
+
+    //Hide this resource from storekeepers
+    public static function shouldRegisterNavigation(): bool
+{
+    $user = Auth::user();
+
+    // Hide the navigation only for storekeeper, show for others
+    if ($user instanceof User && $user->hasRole('storekeeper')) {
+        return false;
+    }
+
+    return true;
+}
+// Permissions
+public static function canViewAny(): bool
+{
+    return Auth::check();
+}
+
+//Permission to create Items
+public static function canCreate(): bool
+{
+    return self::userCanManageEvents();
+}
+
+public static function canEdit(Model $record): bool
+{
+    return self::userCanManageEvents();
+}
+
+public static function canDelete(Model $record): bool
+{
+    return self::userCanManageEvents();
+}
+
+protected static function userCanManageEvents(): bool
+{
+    $user = Auth::user();
+    return $user instanceof User && $user->hasAnyRole(['admin', 'operator']);
+}
 }

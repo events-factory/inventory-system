@@ -3,66 +3,116 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ItemResource\Pages;
-use App\Filament\Resources\ItemResource\RelationManagers;
+use App\Models\Group;
 use App\Models\Item;
+use App\Models\Subcategory;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\EditAction;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TextArea;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\ImageColumn\Directory;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class ItemResource extends Resource
 {
     protected static ?string $model = Item::class;
-    protected static ?string $navigationLabel = 'Items';
-    protected static ?string $navigationGroup = 'Inventory';
 
-    protected static ?string $navigationIcon = 'heroicon-o-archive-box-arrow-down';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
-        return $form
-        ->schema([
-            TextInput::make('name')->required(), 
-            Select::make('category_id')->relationship('category', 'name')->required(),           
-            Select::make('subcategory_id')->relationship('subcategory', 'name')->required(),            
-            Select::make('group_id')->relationship('group', 'name')->nullable(),
-            Select::make('unit')
-                ->options([
-                    'Kg' => 'Kg',
-                    'Cartons' => 'Cartons',
-                    'PC' => 'PC',
-                    'L' => 'L',
-                    'M' => 'M',
-                    'Sqm' => 'Sqm',
+        return $form->schema([
+            Section::make('Item Details')
+                ->schema([
+                    TextInput::make('name')
+                        ->label('Item Name')
+                        ->required(),
+
+                    Select::make('category_id')
+                        ->label('Category')
+                        ->relationship('category', 'name')
+                        ->required()
+                        ->reactive()
+                        ->afterStateUpdated(function (callable $set) {
+                            $set('subcategory_id', null);
+                            $set('group_id', null);
+                        }),
+
+                    Select::make('subcategory_id')
+                        ->label('Subcategory')
+                        ->options(fn (callable $get) =>
+                            Subcategory::where('category_id', $get('category_id'))->pluck('name', 'id')
+                        )
+                        ->required()
+                        ->reactive(),
+
+                    Select::make('group_id')
+                        ->label('Group (Optional)')
+                        ->options(fn (callable $get) =>
+                            Group::where('subcategory_id', $get('subcategory_id'))->pluck('name', 'id')
+                        )
+                        ->nullable(),
+
+                    TextInput::make('model')
+                        ->label('Model (Optional)')
+                        ->nullable(),
+
+                    TextInput::make('serial_number')
+                        ->label('Serial Number (Optional)')
+                        ->nullable(),
+
+                    Select::make('unit')
+                        ->options([
+                            'Kg' => 'Kg',
+                            'Cartons' => 'Cartons',
+                            'PC' => 'PC',
+                            'L' => 'L',
+                            'M' => 'M',
+                            'Sqm' => 'Sqm',
+                        ])
+                        ->default('PC')
+                        ->required(),
+
+                    TextInput::make('quantity')
+                        ->numeric()
+                        ->required()
+                        ->minValue(1)
+                        ->default(1),
+
+                    TextInput::make('flight_case')
+                        ->label('Flight Case (Optional)')
+                        ->nullable(),
+
+                    Select::make('status')
+                        ->label('Status')
+                        ->options([
+                            'available' => 'Available',
+                            'damaged' => 'Damaged',
+                            'lost' => 'Lost',
+                        ])
+                        ->default('available'),
+
+                    TextInput::make('remarks')->nullable(),
+
+                    FileUpload::make('image')
+                        ->label('Item Image')
+                        ->image()
+                        ->disk('public')
+                        ->directory('items')
+                        ->preserveFilenames()
+                        ->enableOpen()
+                        ->enableDownload(),
+
                 ])
-                ->default('PC')
-                ->required(),
-            TextInput::make('quantity')->numeric()->required(),
-            TextInput::make('serial_number'),
-            TextInput::make('model')->nullable(),
-            TextInput::make('flight_case_number')->nullable(),
-            TextInput::make('remarks')->nullable(),
-            FileUpload::make('image')
-                ->label('Item Image')
-                ->image()
-                ->disk('public')
-                ->directory('items')
-                ->preserveFilenames()
-                ->enableOpen()
-                ->enableDownload(),
+                ->columns(2),
         ]);
     }
 
@@ -70,27 +120,34 @@ class ItemResource extends Resource
     {
         return $table
             ->columns([
-                //
-                Tables\Columns\TextColumn::make('name')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('quantity')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('serial_number')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('status')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('category.name')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('subcategory.name')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('group.name')->sortable()->searchable(),
+                TextColumn::make('id')->sortable()->searchable(),
+                TextColumn::make('name')->sortable()->searchable(),
+                TextColumn::make('category.name')->label('Category')->sortable()->searchable(),
+                TextColumn::make('subcategory.name')->label('Subcategory')->sortable()->searchable(),
+                TextColumn::make('model')->sortable()->searchable(),
+                TextColumn::make('serial_number')->sortable()->searchable(),
+                TextColumn::make('unit')->sortable()->searchable(),
+                TextColumn::make('quantity')->sortable()->searchable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->sortable()
+                    ->searchable()
+                    ->colors([
+                        'success' => 'available',
+                        'danger' => fn ($state): bool => $state !== 'available',
+                    ]),
+                TextColumn::make('flight_case')->sortable()->searchable(),
                 ImageColumn::make('image')
+                    ->disk('public')
                     ->label('Image')
                     ->size(50)
                     ->circular()
-                    ->disk('public') // This is the disk where you save files
-                    ->visibility('public'),  
-            ])->defaultSort('id', 'desc')
-            
-            ->filters([
-                //
+                    ->visibility('public'),
             ])
+            ->defaultSort('id', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -101,9 +158,7 @@ class ItemResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
@@ -112,6 +167,46 @@ class ItemResource extends Resource
             'index' => Pages\ListItems::route('/'),
             'create' => Pages\CreateItem::route('/create'),
             'edit' => Pages\EditItem::route('/{record}/edit'),
+            
         ];
+    }
+    public static function shouldRegisterNavigation(): bool
+    {
+        $user = Auth::user();
+    
+        // Hide the navigation only for storekeeper, show for others
+        if ($user instanceof User && $user->hasRole('storekeeper')) {
+            return false;
+        }
+    
+        return true;
+    }
+
+    // Permissions
+    public static function canViewAny(): bool
+    {
+        return Auth::check();
+    }
+
+    //Permission to create Items
+    public static function canCreate(): bool
+    {
+        return self::userCanManageItems();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return self::userCanManageItems();
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return self::userCanManageItems();
+    }
+
+    protected static function userCanManageItems(): bool
+    {
+        $user = Auth::user();
+        return $user instanceof User && $user->hasAnyRole(['admin', 'operator']);
     }
 }

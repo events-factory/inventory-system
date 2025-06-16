@@ -10,38 +10,38 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',                  // Item Name
-        'category_id',            // Category (foreign key)
-        'subcategory_id',         // Sub Category (foreign key)
-        'group_id',               // Group (foreign key)
-        'model',                  // Model
-        'serial_number',          // Serial Number
-        'unit',                   // Unit (e.g., pieces, sets, etc.)
-        'quantity',               // Quantity available
-        'flight_case_number',     // Flight Case Number
-        'remarks',
-        'image',                // Remarks
+        'name', 'category_id', 'subcategory_id', 'group_id', 'model', 'status',
+        'serial_number', 'unit', 'quantity', 'flight_case','remarks','image',
     ];
 
-    // 🔥 Relationships
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    //Relationships with category, subcategory, and group
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
-
     public function subcategory()
     {
         return $this->belongsTo(Subcategory::class);
     }
-
     public function group()
     {
         return $this->belongsTo(Group::class);
     }
 
-    // Many-to-many relationship with requisitions
-    public function requisitions()
+    public function requisitionItems()
+{
+    return $this->hasMany(RequisitionItem::class);
+}
+
+    public function availableQuantity()
     {
-        return $this->belongsToMany(Requisition::class, 'item_requisition');
+        $issued = $this->stockMovements()->where('status', 'issued')->sum('quantity');
+        $returned = $this->stockMovements()->where('status', 'returned')->sum('quantity');
+        return $this->quantity - ($issued - $returned);
     }
 }
