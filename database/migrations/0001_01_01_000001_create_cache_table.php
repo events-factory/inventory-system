@@ -11,24 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Ensure default string length is safe to prevent key length issues
-        Schema::defaultStringLength(191);
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
 
-        if (!Schema::hasTable('cache')) {
-            Schema::create('cache', function (Blueprint $table) {
-                $table->string('key', 191)->primary();  // Ensure key is not too long
-                $table->mediumText('value');
-                $table->integer('expiration');
-            });
-        }
-
-        if (!Schema::hasTable('cache_locks')) {
-            Schema::create('cache_locks', function (Blueprint $table) {
-                $table->string('key', 191)->primary();  // Ensure key is not too long
-                $table->string('owner', 191);  // Ensure owner string length is safe
-                $table->integer('expiration');
-            });
-        }
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
     }
 
     /**
@@ -36,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cache_locks');
         Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
     }
 };
