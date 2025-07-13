@@ -61,12 +61,12 @@ class StatsWidgets extends BaseWidget
             ->chart([1, 2, 3, 4, 5, 6, 10, 20, 30, 40, 100]),
 
             //Total Items that are in good condition
-            Stat::make('Returned in Good Condition', StockMovement::sum('good_condition'))
+            /* Stat::make('Returned in Good Condition', StockMovement::sum('good_condition'))
             ->description('Total items returned in good condition')
             ->descriptionIcon('heroicon-o-check-circle')
             ->color('success')
             ->icon('heroicon-o-check-circle')
-            ->chart([10, 20, 30, 40, 50, 60]),
+            ->chart([10, 20, 30, 40, 50, 60]), */
             
         ];
     }

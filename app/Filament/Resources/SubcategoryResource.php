@@ -20,7 +20,9 @@ class SubcategoryResource extends Resource
 {
     protected static ?string $model = Subcategory::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-view-columns';
+    protected static ?string $navigationGroup = 'Inventory';
+
 
     public static function form(Form $form): Form
     {

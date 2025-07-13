@@ -2,39 +2,32 @@
 
 namespace App\Filament\Resources;
 
-use App\Models\Item;
+use App\Models\ItemReturn;
 use App\Models\StockMovement;
 use Closure;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class StockMovementResource extends Resource
 {
     protected static ?string $model = StockMovement::class;
     protected static ?string $navigationLabel = 'Stock Movements';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Stock Management';
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Select::make('status')
-                ->options([
-                    'returned' => 'Returned',
-                    'damaged' => 'Damaged',
-                    'lost' => 'Lost',
-                ])
-                ->visible(fn($record) => $record && $record->status === 'issued'),
-
             DatePicker::make('action_date')
                 ->label('Action Date')
                 ->required(),
@@ -51,21 +44,25 @@ class StockMovementResource extends Resource
 
                 TextColumn::make('returned_total')
                     ->label('Returned')
-                    ->getStateUsing(fn($record) => $record->good_condition + $record->damaged_quantity),
+                    ->getStateUsing(fn($record) =>
+                        ItemReturn::where('stock_movement_id', $record->id)->sum('good_condition') +
+                        ItemReturn::where('stock_movement_id', $record->id)->sum('damaged_quantity')
+                    ),
 
-                TextColumn::make("remaining_quantity")
-                    ->label("Remaining")
+                    TextColumn::make('remaining_quantity')
+                    ->label('Remaining')
                     ->getStateUsing(function ($record) {
-                        $remaining = $record->quantity
-                            - ($record->good_condition + $record->damaged_quantity + $record->lost_quantity);
-
+                        $returned = ItemReturn::where('stock_movement_id', $record->id)
+                            ->sum(DB::raw('good_condition + damaged_quantity'));
+                        $remaining = $record->quantity - $returned;
                         return $remaining < 0 ? '⚠️ ' . $remaining : $remaining;
                     })
                     ->color(function ($record) {
-                        $remaining = $record->quantity
-                            - ($record->good_condition + $record->damaged_quantity + $record->lost_quantity);
-                        return $remaining < 0 ? 'danger' : null;
+                        $returned = ItemReturn::where('stock_movement_id', $record->id)
+                            ->sum(DB::raw('good_condition + damaged_quantity'));
+                        return $record->quantity > $returned ? 'danger' : 'success';
                     }),
+                
 
                 TextColumn::make('status')
                     ->badge()
@@ -75,29 +72,7 @@ class StockMovementResource extends Resource
                         'warning' => 'issued',
                         'gray' => 'pending',
                         'info' => 'partially_returned',
-                    ])
-                    ->formatStateUsing(function ($state, $record) {
-                        $totalReturned = $record->good_condition + $record->damaged_quantity;
-                        $totalLost = $record->lost_quantity;
-                        $totalHandled = $totalReturned + $totalLost;
-                        $issued = $record->quantity;
-                    
-                        // If nothing has been handled yet, keep it as 'Pending'
-                        if ($totalHandled === 0) {
-                            return 'Pending';
-                        }
-                    
-                        if ($totalLost === $issued) {
-                            return 'Lost';
-                        } elseif ($totalHandled === $issued && $totalLost === 0) {
-                            return 'Returned';
-                        } elseif ($totalHandled < $issued) {
-                            return 'Partially Returned';
-                        } else {
-                            return ucfirst($state);
-                        }
-                    }),
-                    
+                    ]),
 
                 TextColumn::make('action_date')->label('Action Date'),
 
@@ -117,99 +92,75 @@ class StockMovementResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->label('Update Return')
                     ->visible(fn($record) =>
-                        in_array($record->status, ['issued', 'partially_returned']) &&
-                        ($record->quantity > ($record->good_condition + $record->damaged_quantity + $record->lost_quantity))
+                        in_array($record->status, ['issued', 'partially_returned'])
                     )
                     ->form([
+                        Placeholder::make('issued_quantity')
+                            ->label('Issued Quantity')
+                            ->content(fn($record) => $record->quantity),
+                    
+                        Placeholder::make('remaining_quantity')
+                            ->label('Remaining Quantity (Not returned)')
+                            ->content(function ($record) {
+                                $returned = \App\Models\ItemReturn::where('stock_movement_id', $record->id)
+                                    ->sum(DB::raw('good_condition + damaged_quantity'));
+                                $remaining = $record->quantity - $returned;
+                                return $remaining < 0 ? '⚠️ ' . $remaining : $remaining;
+                            }),
+                    
                         TextInput::make('good_condition')
                             ->label('Returned (Good)')
                             ->numeric()
                             ->minValue(0)
-                            ->default(fn($record) => $record->good_condition)
-                            ->rules([
-                                function (Get $get) {
-                                    return function (string $attribute, $value, Closure $fail) use ($get) {
-                                        $damaged = $get('damaged_quantity') ?? 0;
-                                        $lost = $get('lost_quantity') ?? 0;
-                                        $total = $value + $damaged + $lost;
-                                        $issuedQuantity = $get('quantity') ?? null;
-
-                                        if ($issuedQuantity !== null && $total > $issuedQuantity) {
-                                            $fail('Returned + damaged + lost items cannot exceed issued quantity.');
-                                        }
-                                    };
-                                },
-                            ]),
-
+                            ->default(0),
+                    
                         TextInput::make('damaged_quantity')
                             ->label('Returned (Damaged)')
                             ->numeric()
                             ->minValue(0)
-                            ->default(fn($record) => $record->damaged_quantity)
-                            ->rules([
-                                function (Get $get) {
-                                    return function (string $attribute, $value, Closure $fail) use ($get) {
-                                        $good = $get('good_condition') ?? 0;
-                                        $lost = $get('lost_quantity') ?? 0;
-                                        $total = $good + $value + $lost;
-                                        $issuedQuantity = $get('quantity') ?? null;
-
-                                        if ($issuedQuantity !== null && $total > $issuedQuantity) {
-                                            $fail('Returned + damaged + lost items cannot exceed issued quantity.');
-                                        }
-                                    };
-                                },
-                            ]),
-
+                            ->default(0),
+                    
                         TextInput::make('lost_quantity')
                             ->label('Lost')
                             ->numeric()
                             ->minValue(0)
-                            ->default(fn($record) => $record->lost_quantity)
-                            ->rules([
-                                function (Get $get) {
-                                    return function (string $attribute, $value, Closure $fail) use ($get) {
-                                        $good = $get('good_condition') ?? 0;
-                                        $damaged = $get('damaged_quantity') ?? 0;
-                                        $total = $good + $damaged + $value;
-                                        $issuedQuantity = $get('quantity') ?? null;
-
-                                        if ($issuedQuantity !== null && $total > $issuedQuantity) {
-                                            $fail('Returned + damaged + lost items cannot exceed issued quantity.');
-                                        }
-                                    };
-                                },
-                            ]),
-
-                        TextInput::make('quantity')
-                            ->hidden()
-                            ->default(fn($record) => $record->quantity),
+                            ->default(0),
                     ])
-                    ->mutateFormDataUsing(function (array $data, $record) {
-                        $record->item->quantity += ($data['good_condition'] - $record->good_condition)
-                                        + ($data['damaged_quantity'] - $record->damaged_quantity);
-                        $record->item->save();
                     
-                        $totalHandled = $data['good_condition'] + $data['damaged_quantity'] + $data['lost_quantity'];
-                    
-                        // Only update status if the item was issued
-                        if ($record->status === 'issued' || $record->status === 'partially_returned') {
-                            if ($data['lost_quantity'] === $record->quantity) {
-                                $data['status'] = 'lost';
-                            } elseif ($totalHandled === $record->quantity && $data['lost_quantity'] === 0) {
-                                $data['status'] = 'returned';
-                            } elseif ($totalHandled > 0 && $totalHandled < $record->quantity) {
-                                $data['status'] = 'partially_returned';
+                    ->action(function (array $data, $record) {
+                        DB::transaction(function () use ($data, $record) {
+                            // Insert new return record
+                            ItemReturn::create([
+                                'stock_movement_id' => $record->id,
+                                'good_condition' => $data['good_condition'],
+                                'damaged_quantity' => $data['damaged_quantity'],
+                                'lost_quantity' => $data['lost_quantity'],
+                            ]);
+
+                            // Adjust item quantity
+                            $record->item->increment('quantity', $data['good_condition'] + $data['damaged_quantity']);
+
+                            // Calculate total returned
+                            $totalReturned = ItemReturn::where('stock_movement_id', $record->id)->sum(DB::raw('good_condition + damaged_quantity + lost_quantity'));
+                            $totalLost = ItemReturn::where('stock_movement_id', $record->id)->sum('lost_quantity');
+
+                            // Determine status
+                            if ($totalReturned >= $record->quantity) {
+                                if ($totalLost === $record->quantity) {
+                                    $record->update(['status' => 'lost']);
+                                } elseif ($totalLost === 0) {
+                                    $record->update(['status' => 'returned']);
+                                } else {
+                                    $record->update(['status' => 'partially_returned']);
+                                }
+                            } else {
+                                $record->update(['status' => 'partially_returned']);
                             }
-                        }
-                    
-                        return $data;
-                    })
-                    
-                    ->after(function ($record) {
+                        });
+
                         Notification::make()
                             ->title('Return updated successfully.')
                             ->success()
