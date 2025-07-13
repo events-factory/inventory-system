@@ -23,8 +23,3 @@ Route::get('/approved-events/{event}/report', function (Event $event) {
 })->name('approved-events.report');
 
 Route::get('/approved-events/{event}/report', [ReportController::class, 'download'])->name('approved-events.report');
-
-// in routes/web.php
-Route::get('/test-403', function () {
-    return 'It works!';
-});
