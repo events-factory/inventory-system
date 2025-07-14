@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,12 +20,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS URLs in production environment
         if ($this->app->environment('local')) {
             URL::forceScheme('https');
         }
-
-        // Add custom view namespace
         View::addNamespace('internalPages', base_path('app/Filament/Resources/ApprovedEventResource/Pages'));
+        
+
     }
 }

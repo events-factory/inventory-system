@@ -10,10 +10,14 @@ class StockMovement extends Model
     use HasFactory;
 
     protected $fillable = [
-        'requisition_id', 'item_id', 'status', 'action_date', 'quantity','good_condition', 'damaged_quantity', 'lost_quantity',
+        'item_id',
+        'requisition_id',
+        'quantity',
+        'status',
+        'action_date',
     ];
     protected $attributes = [
-        'good_condition' => 0,
+
     ];
     
 
@@ -26,6 +30,11 @@ class StockMovement extends Model
     {
         return $this->belongsTo(Requisition::class);
     }
+    public function itemReturns()
+    {
+        return $this->hasMany(ItemReturn::class);
+    }
+
     
 }
 
