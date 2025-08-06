@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\Hidden;
 
 class EventResource extends Resource
 {
@@ -81,67 +82,17 @@ class EventResource extends Resource
                 ),
 
             // Repeater for Items - Bind to Event's Requisition Items
-            Repeater::make("requisition.items")
-    ->label("Select Items and Quantity")
-    ->columns(4)  // <-- This makes all children arrange in a single horizontal row
-    ->schema([
-        Select::make("category_id")
-            ->label("Category")
-            ->options(\App\Models\Category::all()->pluck("name", "id"))
-            ->reactive()
-            ->required()
-            ->afterStateUpdated(fn (callable $set) => $set("subcategory_id", null))
-            ->columnSpan(1),
+            Forms\Components\Section::make('Add Event Items')
+                ->schema([
+                    Forms\Components\View::make('filament.forms.components.event-item-selector-wrapper')
+                        ->columnSpan('full'),
+                ])
+                ->columnSpan('full'),
+                Forms\Components\Hidden::make('items')
+    ->dehydrated()
+    ->default(fn (\App\Filament\Resources\EventResource\Pages\CreateEvent $livewire) => json_encode($livewire->addedItems))
 
-        Select::make("subcategory_id")
-            ->label("Subcategory")
-            ->options(function (callable $get) {
-                $categoryId = $get("category_id");
-                if (!$categoryId) {
-                    return [];
-                }
-                return \App\Models\Subcategory::where("category_id", $categoryId)->pluck("name", "id");
-            })
-            ->reactive()
-            ->required()
-            ->afterStateUpdated(fn (callable $set) => $set("item_id", null))
-            ->columnSpan(1),
 
-        Select::make("item_id")
-            ->label("Item")
-            ->options(function (callable $get) {
-                $subcategoryId = $get("subcategory_id");
-                if (!$subcategoryId) {
-                    return [];
-                }
-                return \App\Models\Item::where("subcategory_id", $subcategoryId)->pluck("name", "id");
-            })
-            ->searchable()
-            ->required()
-            ->columnSpan(1),
-
-        TextInput::make("pivot.quantity")
-            ->label("Quantity")
-            ->numeric()
-            ->required()
-            ->rules([
-                function (Forms\Get $get) {
-                    return function (string $attribute, $value, Closure $fail) use ($get) {
-                        $itemId = $get("item_id");
-                        if ($itemId) {
-                            $item = \App\Models\Item::find($itemId);
-                            if ($item && $value > $item->quantity) {
-                                $fail("Only {$item->quantity} available in stock.");
-                            }
-                        }
-                    };
-                },
-            ])
-            ->columnSpan(1),
-    ])
-    ->columnSpan("full")
-    ->default(fn ($record) => $record->requisition->items ?? [])
-    ->required(),
 
         ]);
     }
@@ -181,7 +132,6 @@ class EventResource extends Resource
                     ->searchable(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -210,17 +160,7 @@ class EventResource extends Resource
     {
         return [
             "index" => Pages\ListEvents::route("/"),
-            "create" => Pages\CreateEvent::route("/create"),
-            "edit" => Pages\EditEvent::route("/{record}/edit"),
-        ];
-    }
-
-    //Hide this resource from storekeepers
-    public static function shouldRegisterNavigation(): bool
-    {
-        $user = Auth::user();
-
-        // Hide the navigation only for storekeeper, show for others
+            "create" => Pages\CreateEvent::route("/create"),];
         if ($user instanceof User && $user->hasRole("storekeeper")) {
             return false;
         }
