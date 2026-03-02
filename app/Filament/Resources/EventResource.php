@@ -160,7 +160,14 @@ class EventResource extends Resource
     {
         return [
             "index" => Pages\ListEvents::route("/"),
-            "create" => Pages\CreateEvent::route("/create"),];
+            "create" => Pages\CreateEvent::route("/create"),
+        ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        $user = Auth::user();
+
         if ($user instanceof User && $user->hasRole("storekeeper")) {
             return false;
         }

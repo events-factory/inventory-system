@@ -31,8 +31,8 @@ class EventItemSelector extends Component
         $this->categories = Category::pluck('name', 'id')->toArray();
     }
 
-// Validate the quantity against the available stock
-        public function updatedSelectedItem($value): void
+    // Validate the quantity against the available stock
+    public function updatedSelectedItem($value): void
     {
         $item = Item::find($value);
 
@@ -47,54 +47,51 @@ class EventItemSelector extends Component
 
     // Validate the quantity when it is updated
     public function updatedQuantity($value): void
-{
-    $this->validateQuantity();
-}
-// Validate the quantity against the available stock
-private function validateQuantity(): void
-{
-    if ($this->selectedItem && $this->availableQuantity !== null) {
-        if ($this->quantity > $this->availableQuantity) {
-            $this->quantityWarning = "Only {$this->availableQuantity} item(s) available.";
-        } else {
-            $this->quantityWarning = null;
+    {
+        $this->validateQuantity();
+    }
+    // Validate the quantity against the available stock
+    private function validateQuantity(): void
+    {
+        if ($this->selectedItem && $this->availableQuantity !== null) {
+            if ($this->quantity > $this->availableQuantity) {
+                $this->quantityWarning = "Only {$this->availableQuantity} item(s) available.";
+            } else {
+                $this->quantityWarning = null;
+            }
         }
     }
-}
 
     public function updatedSelectedCategory($value): void
     {
         $this->subcategories = Subcategory::where('category_id', $value)->pluck('name', 'id')->toArray();
-        $this->selectedSubcategory = null;
-        $this->groups = [];
-        $this->selectedGroup = null;
-        $this->items = [];
-        $this->selectedItem = null;
+        $this->reset(['selectedSubcategory', 'groups', 'selectedGroup', 'items', 'selectedItem']);
     }
 
     public function updatedSelectedSubcategory($value): void
-{
-    $this->groups = Group::where('subcategory_id', $value)->pluck('name', 'id')->toArray();
-    $this->selectedGroup = null;
-    $this->selectedItem = null;
+    {
+        $this->groups = Group::where('subcategory_id', $value)->pluck('name', 'id')->toArray();
 
-    // Load items without group within the selected subcategory
-    $this->items = Item::whereNull('group_id')
-        ->where('subcategory_id', $value)
-        ->pluck('name', 'id')
-        ->map(fn ($name) => $name . ' (Ungrouped)')
-        ->toArray();
-}
+        // Load items without group within the selected subcategory
+        $this->items = Item::where('subcategory_id', $value)
+            ->whereNull('group_id')
+            ->pluck('name', 'id')
+            ->map(fn($name) => $name . ' (Ungrouped)')
+            ->toArray();
+
+        $this->reset(['selectedGroup', 'selectedItem']);
+    }
 
     public function updatedSelectedGroup($value): void
     {
         $this->items = Item::where('group_id', $value)->pluck('name', 'id')->toArray();
-        $this->selectedItem = null;
+        $this->reset('selectedItem');
     }
 
     public function addItem(): void
     {
-        if (!$this->selectedItem || $this->quantity < 1) return;
+        if (!$this->selectedItem || $this->quantity < 1)
+            return;
 
         $item = Item::find($this->selectedItem);
 
