@@ -58,7 +58,7 @@ class RequisitionResource extends Resource
                     ->schema([
                         Select::make("item_id")
                             ->label("Item")
-                            ->options(\App\Models\Item::pluck("name", "id"))
+                            ->relationship("item", "name")
                             ->searchable()
                             ->required(),
 

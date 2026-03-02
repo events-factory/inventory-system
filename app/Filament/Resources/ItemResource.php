@@ -3,24 +3,18 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ItemResource\Pages;
-use App\Models\Group;
 use App\Models\Item;
-use App\Models\Subcategory;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class ItemResource extends Resource
 {
@@ -29,50 +23,37 @@ class ItemResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
     protected static ?string $navigationGroup = 'Inventory';
 
-
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Item Details')
+            Forms\Components\Section::make('Item Details')
                 ->schema([
-                    TextInput::make('name')
+                    Forms\Components\TextInput::make('name')
                         ->label('Item Name')
                         ->required(),
-
-                    Select::make('category_id')
+                    Forms\Components\Select::make('category_id')
                         ->label('Category')
                         ->relationship('category', 'name')
-                        ->required()
-                        ->reactive()
-                        ->afterStateUpdated(function (callable $set) {
-                            $set('subcategory_id', null);
-                            $set('group_id', null);
-                        }),
-
-                    Select::make('subcategory_id')
+                        ->searchable()
+                        ->preload()
+                        ->required(),
+                    Forms\Components\Select::make('subcategory_id')
                         ->label('Subcategory')
-                        ->options(fn (callable $get) =>
-                            Subcategory::where('category_id', $get('category_id'))->pluck('name', 'id')
-                        )
-                        ->required()
-                        ->reactive(),
-
-                    Select::make('group_id')
+                        ->relationship('subcategory', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->required(),
+                    Forms\Components\Select::make('group_id')
                         ->label('Group (Optional)')
-                        ->options(fn (callable $get) =>
-                            Group::where('subcategory_id', $get('subcategory_id'))->pluck('name', 'id')
-                        )
-                        ->nullable(),
-
-                    TextInput::make('model')
-                        ->label('Model (Optional)')
-                        ->nullable(),
-
-                    TextInput::make('serial_number')
-                        ->label('Serial Number (Optional)')
-                        ->nullable(),
-
-                    Select::make('unit')
+                        ->relationship('group', 'name')
+                        ->searchable()
+                        ->preload(),
+                    Forms\Components\TextInput::make('model')
+                        ->label('Model (Optional)'),
+                    Forms\Components\TextInput::make('serial_number')
+                        ->label('Serial Number (Optional)'),
+                    Forms\Components\Select::make('unit')
+                        ->label('Unit')
                         ->options([
                             'Kg' => 'Kg',
                             'Cartons' => 'Cartons',
@@ -83,117 +64,71 @@ class ItemResource extends Resource
                         ])
                         ->default('PC')
                         ->required(),
-
-                    TextInput::make('quantity')
+                    Forms\Components\TextInput::make('quantity')
+                        ->label('Quantity')
                         ->numeric()
-                        ->required()
-                        ->minValue(1)
-                        ->default(1),
-
-                    TextInput::make('flight_case')
-                        ->label('Flight Case (Optional)')
-                        ->nullable(),
-
-                    Select::make('status')
+                        ->default(1)
+                        ->required(),
+                    Forms\Components\TextInput::make('flight_case')
+                        ->label('Flight Case (Optional)'),
+                    Forms\Components\Select::make('status')
                         ->label('Status')
                         ->options([
                             'available' => 'Available',
                             'damaged' => 'Damaged',
                             'lost' => 'Lost',
                         ])
-                        ->default('available'),
-
-                    TextInput::make('remarks')->nullable(),
-
-                    FileUpload::make('image')
+                        ->default('available')
+                        ->required(),
+                    Forms\Components\TextInput::make('remarks')
+                        ->label('Remarks'),
+                    Forms\Components\FileUpload::make('image')
                         ->label('Item Image')
                         ->image()
-                        ->disk('public')
-                        ->directory('items')
-                        ->preserveFilenames()
-                        ->enableOpen()
-                        ->enableDownload(),
-
-                ])
-                ->columns(2),
+                        ->directory('items'),
+                ])->columns(2),
         ]);
     }
 
-
-public static function table(Table $table): Table
-{
-    return $table
-        ->columns([
-            TextColumn::make('id')->sortable()->searchable(),
-            TextColumn::make('name')->sortable()->searchable(),
-            TextColumn::make('category.name')->label('Category')->sortable()->searchable(),
-            TextColumn::make('subcategory.name')->label('Subcategory')->sortable()->searchable(),
-            TextColumn::make('model')->sortable()->searchable(),
-            TextColumn::make('serial_number')->sortable()->searchable(),
-            TextColumn::make('unit')->sortable()->searchable(),
-            TextColumn::make('quantity')->sortable()->searchable(),
-            TextColumn::make('status')
-                ->badge()
-                ->sortable()
-                ->searchable()
-                ->colors([
-                    'success' => 'available',
-                    'danger' => fn ($state): bool => $state !== 'available',
-                ]),
-            TextColumn::make('flight_case')->sortable()->searchable(),
-            ImageColumn::make('image')
-                ->disk('public')
-                ->label('Image')
-                ->size(50)
-                ->circular()
-                ->visibility('public'),
-        ])
-        ->filters([
-            SelectFilter::make('category_id')
-                ->label('Category')
-                ->relationship('category', 'name')
-                ->searchable()
-                ->preload(),
-
-            SelectFilter::make('subcategory_id')
-                ->label('Subcategory')
-                ->options(function () {
-                    $categoryId = request()->input('tableFilters.category_id');
-
-                    return Subcategory::when($categoryId, fn ($query) => 
-                        $query->where('category_id', $categoryId)
-                    )->pluck('name', 'id')->toArray();
-                })
-                ->searchable()
-                ->preload(),
-
-            SelectFilter::make('group_id')
-                ->label('Group')
-                ->options(function () {
-                    $subcategoryId = request()->input('tableFilters.subcategory_id');
-
-                    return Group::when($subcategoryId, fn ($query) => 
-                        $query->where('subcategory_id', $subcategoryId)
-                    )->pluck('name', 'id')->toArray();
-                })
-                ->searchable()
-                ->preload(),
-        ])
-        ->defaultSort('id', 'desc')
-        ->actions([
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
-        ])
-        ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ]);
-}
-
-    public static function getRelations(): array
+    public static function table(Table $table): Table
     {
-        return [];
+        return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['category', 'subcategory']))
+            ->columns([
+                TextColumn::make('id')->sortable(),
+                ImageColumn::make('image')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('model')->searchable()->sortable(),
+                TextColumn::make('category.name')->label('Category')->sortable(),
+                TextColumn::make('subcategory.name')->label('Subcategory')->sortable(),
+                TextColumn::make('quantity')->sortable(),
+                TextColumn::make('unit')->sortable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'available' => 'success',
+                        'damaged' => 'warning',
+                        'lost' => 'danger',
+                        default => 'gray',
+                    })
+                    ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('category')
+                    ->relationship('category', 'name'),
+                SelectFilter::make('subcategory')
+                    ->relationship('subcategory', 'name'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array
@@ -202,46 +137,15 @@ public static function table(Table $table): Table
             'index' => Pages\ListItems::route('/'),
             'create' => Pages\CreateItem::route('/create'),
             'edit' => Pages\EditItem::route('/{record}/edit'),
-            
         ];
     }
+
     public static function shouldRegisterNavigation(): bool
     {
         $user = Auth::user();
-    
-        // Hide the navigation only for storekeeper, show for others
         if ($user instanceof User && $user->hasRole('storekeeper')) {
             return false;
         }
-    
         return true;
-    }
-
-    // Permissions
-    public static function canViewAny(): bool
-    {
-        return Auth::check();
-    }
-
-    //Permission to create Items
-    public static function canCreate(): bool
-    {
-        return self::userCanManageItems();
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return self::userCanManageItems();
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return self::userCanManageItems();
-    }
-
-    protected static function userCanManageItems(): bool
-    {
-        $user = Auth::user();
-        return $user instanceof User && $user->hasAnyRole(['admin', 'operator']);
     }
 }
