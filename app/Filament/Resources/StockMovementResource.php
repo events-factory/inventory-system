@@ -29,18 +29,16 @@ class StockMovementResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('event_name_alias')
-    ->label('Event Name')
-    ->sortable()
-    ->getStateUsing(fn ($record) => $record->event_name_alias),
+                    ->label('Event Name')
+                    ->sortable(),
 
-                TextColumn::make('event_date')
+                TextColumn::make('event_date_alias')
                     ->label('Event Date')
                     ->sortable()
-                    ->getStateUsing(fn ($record) => Carbon::parse($record->event_date)->format('M d, Y')),
+                    ->date('M d, Y'),
 
                 TextColumn::make('total_items')
-                    ->label('Total Items')
-                    ->getStateUsing(fn ($record) => $record->total_items),
+                    ->label('Total Items'),
             ])
             ->actions([
                 Tables\Actions\Action::make('viewItems')

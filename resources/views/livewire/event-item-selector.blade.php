@@ -8,8 +8,8 @@
                 id="category"
                 class="mt-1 block w-full rounded-md border border-gray-300 bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
             <option value="" class="bg-white text-black dark:bg-gray-900 dark:text-white">-- Select Category --</option>
-            @foreach($categories as $id => $name)
-                <option value="{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
+            @foreach($this->categories as $id => $name)
+                <option value="{{ $id }}" wire:key="cat-{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
             @endforeach
         </select>
         </div>
@@ -21,8 +21,8 @@
                     id="subcategory"
                     class="mt-1 block w-full rounded-md border border-gray-300 bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option value="" class="bg-white text-black dark:bg-gray-900 dark:text-white">-- Select Subcategory --</option>
-                @foreach($subcategories as $id => $name)
-                    <option value="{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
+                @foreach($this->subcategories as $id => $name)
+                    <option value="{{ $id }}" wire:key="sub-{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
                 @endforeach
             </select>
         </div>
@@ -34,8 +34,8 @@
                     id="group"
                     class="mt-1 block w-full rounded-md border border-gray-300 bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option value="" class="bg-white text-black dark:bg-gray-900 dark:text-white">-- Select Group --</option>
-                @foreach($groups as $id => $name)
-                    <option value="{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
+                @foreach($this->groups as $id => $name)
+                    <option value="{{ $id }}" wire:key="grp-{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
                 @endforeach
             </select>
         </div>
@@ -47,8 +47,8 @@
                     id="item"
                     class="mt-1 block w-full rounded-md border border-gray-300 bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option value="" class="bg-white text-black dark:bg-gray-900 dark:text-white">-- Select Item --</option>
-                @foreach($items as $id => $name)
-                    <option value="{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
+                @foreach($this->itemsList as $id => $name)
+                    <option value="{{ $id }}" wire:key="item-{{ $id }}" class="bg-white text-black dark:bg-gray-900 dark:text-white">{{ $name }}</option>
                 @endforeach
             </select>
         </div>
@@ -94,7 +94,7 @@
     </thead>
     <tbody>
         @foreach ($addedItems as $index => $item)
-            <tr class="odd:bg-white even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700">
+            <tr wire:key="added-{{ $item['item_id'] }}" class="odd:bg-white even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700">
                 <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">{{ $item['item_name'] }}</td>
                 <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">{{ $item['quantity'] }}</td>
                 <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">

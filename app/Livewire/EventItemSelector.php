@@ -10,11 +10,6 @@ use App\Models\Item;
 
 class EventItemSelector extends Component
 {
-    public array $categories = [];
-    public array $subcategories = [];
-    public array $groups = [];
-    public array $items = [];
-
     public $selectedCategory = null;
     public $selectedSubcategory = null;
     public $selectedGroup = null;
@@ -28,7 +23,7 @@ class EventItemSelector extends Component
 
     public function mount(): void
     {
-        $this->categories = Category::pluck('name', 'id')->toArray();
+        // No need to pluck categories in mount if using computed
     }
 
     // Validate the quantity against the available stock
@@ -64,28 +59,58 @@ class EventItemSelector extends Component
 
     public function updatedSelectedCategory($value): void
     {
-        $this->subcategories = Subcategory::where('category_id', $value)->pluck('name', 'id')->toArray();
-        $this->reset(['selectedSubcategory', 'groups', 'selectedGroup', 'items', 'selectedItem']);
+        $this->reset(['selectedSubcategory', 'selectedGroup', 'selectedItem']);
     }
 
     public function updatedSelectedSubcategory($value): void
     {
-        $this->groups = Group::where('subcategory_id', $value)->pluck('name', 'id')->toArray();
-
-        // Load items without group within the selected subcategory
-        $this->items = Item::where('subcategory_id', $value)
-            ->whereNull('group_id')
-            ->pluck('name', 'id')
-            ->map(fn($name) => $name . ' (Ungrouped)')
-            ->toArray();
-
         $this->reset(['selectedGroup', 'selectedItem']);
     }
 
     public function updatedSelectedGroup($value): void
     {
-        $this->items = Item::where('group_id', $value)->pluck('name', 'id')->toArray();
         $this->reset('selectedItem');
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function categories(): array
+    {
+        return Category::pluck('name', 'id')->toArray();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function subcategories(): array
+    {
+        if (!$this->selectedCategory) return [];
+        return Subcategory::where('category_id', $this->selectedCategory)->pluck('name', 'id')->toArray();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function groups(): array
+    {
+        if (!$this->selectedSubcategory) return [];
+        return Group::where('subcategory_id', $this->selectedSubcategory)->pluck('name', 'id')->toArray();
+    }
+
+    #[\Livewire\Attributes\Computed]
+    public function itemsList(): array
+    {
+        if (!$this->selectedSubcategory && !$this->selectedGroup) return [];
+
+        $query = Item::query();
+        if ($this->selectedGroup) {
+            $query->where('group_id', $this->selectedGroup);
+        } else {
+            $query->where('subcategory_id', $this->selectedSubcategory)->whereNull('group_id');
+        }
+
+        $items = $query->pluck('name', 'id');
+        
+        if (!$this->selectedGroup && $this->selectedSubcategory) {
+            return $items->map(fn($name) => $name . ' (Ungrouped)')->toArray();
+        }
+
+        return $items->toArray();
     }
 
     public function addItem(): void
