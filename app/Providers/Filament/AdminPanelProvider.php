@@ -25,10 +25,12 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->brandName('Event Factory')
+            ->sidebarCollapsibleOnDesktop()
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
+            ->spa()
             ->colors([
                 'primary' => Color::Amber,
             ])
