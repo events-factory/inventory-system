@@ -3,8 +3,8 @@ version: '3.8'
 services:
   app:
     build:
-      context: .  # This tells Docker to use the current directory as context for the build.
-      dockerfile: Dockerfile  # Explicitly use the Dockerfile you provided.
+      context: .
+      dockerfile: Dockerfile
     container_name: laravel-app
     restart: unless-stopped
     working_dir: /var/www/html
@@ -16,9 +16,7 @@ services:
       - .env
     command: >
       bash -c "
-        composer install &&
-        cp .env .env.backup &&
+        composer install --no-interaction --optimize-autoloader --prefer-dist &&
         php artisan config:clear &&
         php artisan serve --host=0.0.0.0 --port=8000
       "
-
