@@ -189,37 +189,38 @@ public static function form(Forms\Form $form): Forms\Form
     $user = Auth::user();
 
     // Hide the navigation only for storekeeper, show for others
-    if ($user instanceof User && $user->hasRole('storekeeper')) {
+    if ($user instanceof User && $user->hasAnyRole(['storekeeper', 'Storekeeper'])) {
         return false;
     }
 
     return true;
 }
-// Permissions
+
 public static function canViewAny(): bool
 {
     return Auth::check();
 }
 
-//Permission to create Items
-public static function canCreate(): bool
-{
-    return self::userCanManageEvents();
-}
+    //Permission to create Items
+    public static function canCreate(): bool
+    {
+        return self::userCanManageEvents();
+    }
 
-public static function canEdit(Model $record): bool
-{
-    return self::userCanManageEvents();
-}
+    public static function canEdit(Model $record): bool
+    {
+        return self::userCanManageEvents();
+    }
 
-public static function canDelete(Model $record): bool
-{
-    return self::userCanManageEvents();
-}
+    public static function canDelete(Model $record): bool
+    {
+        return self::userCanManageEvents();
+    }
 
-protected static function userCanManageEvents(): bool
-{
-    $user = Auth::user();
-    return $user instanceof User && $user->hasAnyRole(['admin', 'operator']);
-}
+    protected static function userCanManageEvents(): bool
+    {
+        $user = Auth::user();
+        return $user instanceof User &&
+            $user->hasAnyRole(["admin", "Admin", "operator", "Operator"]);
+    }
 }
