@@ -22,137 +22,119 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\Hidden;
 
 class EventResource extends Resource
 {
     protected static ?string $model = Event::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    protected static ?string $navigationGroup = 'Event Management';
+    protected static ?string $navigationIcon = "heroicon-o-calendar-days";
+    protected static ?string $navigationGroup = "Event Management";
 
-
-public static function form(Forms\Form $form): Forms\Form
-{
-    return $form
-        ->schema([
-            TextInput::make('event_name')
+    public static function form(Forms\Form $form): Forms\Form
+    {
+        return $form->schema([
+            TextInput::make("event_name")
                 ->required()
-                ->label('Event Name'),
-            DatePicker::make('event_date')
+                ->label("Event Name"),
+            DatePicker::make("event_date")
                 ->required()
-                ->label('Event Date'),
-            TextInput::make('event_location')
+                ->label("Event Date"),
+            TextInput::make("event_location")
                 ->required()
-                ->label('Event Location'),
-            TextInput::make('customer')
+                ->label("Event Location"),
+            TextInput::make("customer")
                 ->required()
-                ->label('Customer'),
-            TextInput::make('responsible_person_name')
+                ->label("Customer"),
+            TextInput::make("responsible_person_name")
                 ->required()
-                ->label('Responsible Person Name'),
-            TextInput::make('responsible_person_phone')
+                ->label("Responsible Person Name"),
+            TextInput::make("responsible_person_phone")
                 ->required()
-                ->label('Responsible Person Phone'),
-            TextInput::make('responsible_person_email')
+                ->label("Responsible Person Phone"),
+            TextInput::make("responsible_person_email")
                 ->required()
-                ->label('Responsible Person Email'),
-            Select::make('urgency')
+                ->label("Responsible Person Email"),
+            Select::make("urgency")
                 ->options([
-                    'low' => 'Low',
-                    'medium' => 'Medium',
-                    'high' => 'High',
+                    "low" => "Low",
+                    "medium" => "Medium",
+                    "high" => "High",
                 ])
                 ->required()
-                ->label('Urgency'),
-            Textarea::make('notes')
-                ->label('Notes'),
+                ->label("Urgency"),
+            Textarea::make("notes")->label("Notes")->columnspan("full"),
 
             // Requisition Fields - Bind to Event's Requisition
-            DatePicker::make('requisition.expected_pickup_date')
+            DatePicker::make("requisition.expected_pickup_date")
                 ->required()
-                ->label('Expected Pickup Date')
-                ->default(fn ($record) => $record->requisition->expected_pickup_date ?? null),
-            DatePicker::make('requisition.expected_return_date')
+                ->label("Expected Pickup Date")
+                ->default(
+                    fn($record) => $record->requisition->expected_pickup_date ??
+                        null
+                ),
+            DatePicker::make("requisition.expected_return_date")
                 ->required()
-                ->label('Expected Return Date')
-                ->default(fn ($record) => $record->requisition->expected_return_date ?? null),
+                ->label("Expected Return Date")
+                ->default(
+                    fn($record) => $record->requisition->expected_return_date ??
+                        null
+                ),
 
             // Repeater for Items - Bind to Event's Requisition Items
-            Repeater::make('requisition.items') // Repeater for multiple items
+            Forms\Components\Section::make('Add Event Items')
                 ->schema([
-                    Select::make('item_id') // Select item
-                        ->label('Item')
-                        ->options(function () {
-                            return Item::all()->pluck('name', 'id');
-                        })
-                        ->searchable()
-                        ->required(),
-                    TextInput::make('pivot.quantity')
-    ->label('Quantity')
-    ->numeric()
-    ->required()
-    ->rules([
-    function (\Filament\Forms\Get $get) {
-        return function (string $attribute, $value, Closure $fail) use ($get) {
-            $itemId = $get('item_id'); // Get selected item in this row
-
-            if ($itemId) {
-                $item = \App\Models\Item::find($itemId);
-                if ($item && $value > $item->quantity) {
-                    $fail("Only {$item->quantity} available in stock.");
-                }
-            }
-        };
-    },
-]),
-
+                    Forms\Components\View::make('filament.forms.components.event-item-selector-wrapper')
+                        ->columnSpan('full'),
                 ])
-                ->label('Select Items and Quantity')
-                ->columns(2)
-                ->default(fn ($record) => $record->requisition->items ?? [])
-                ->required(),
-        ]);
-}
+                ->columnSpan('full'),
+                Forms\Components\Hidden::make('items')
+    ->dehydrated()
+    ->default(fn (\App\Filament\Resources\EventResource\Pages\CreateEvent $livewire) => json_encode($livewire->addedItems))
 
+
+
+        ]);
+    }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 // Your existing table columns
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
+                Tables\Columns\TextColumn::make("id")
+                    ->label("ID")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('event_name')
-                    ->label('Event Name')
+                Tables\Columns\TextColumn::make("event_name")
+                    ->label("Event Name")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('event_date')
-                    ->label('Event Date')
+                Tables\Columns\TextColumn::make("event_date")
+                    ->label("Event Date")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('event_location')
-                    ->label('Event Location')
+                Tables\Columns\TextColumn::make("event_location")
+                    ->label("Event Location")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('customer')
-                    ->label('Customer')
+                Tables\Columns\TextColumn::make("customer")
+                    ->label("Customer")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('responsible_person_name')
-                    ->label('Responsible Person Name')
+                Tables\Columns\TextColumn::make("responsible_person_name")
+                    ->label("Responsible Person Name")
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('responsible_person_phone')
-                    ->label('Responsible Person Phone')
+                Tables\Columns\TextColumn::make("responsible_person_phone")
+                    ->label("Responsible Person Phone")
                     ->sortable()
                     ->searchable(),
-
-            ])->actions([
-                Tables\Actions\EditAction::make(),
+            ])
+            ->actions([
                 Tables\Actions\DeleteAction::make(),
-            ])->bulkActions([
+            ])
+            ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
@@ -163,30 +145,28 @@ public static function form(Forms\Form $form): Forms\Form
     }
 
     protected static function booted()
-{
-    static::created(function ($event) {
-        $event->requisition()->create([
-            'event_id' => $event->id,
-            'expected_pickup_date' => $event->expected_pickup_date, // Use the value from the form
-            'expected_return_date' => $event->expected_return_date, // Use the value from the form
-            'status' => 'pending', // initial status
-        ]);
-    });
-}
+    {
+        static::created(function ($event) {
+            $event->requisition()->create([
+                "event_id" => $event->id,
+                "expected_pickup_date" => $event->expected_pickup_date, // Use the value from the form
+                "expected_return_date" => $event->expected_return_date, // Use the value from the form
+                "status" => "pending", // initial status
+            ]);
+        });
+    }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEvents::route('/'),
-            'create' => Pages\CreateEvent::route('/create'),
-            'edit' => Pages\EditEvent::route('/{record}/edit'),
+            "index" => Pages\ListEvents::route("/"),
+            "create" => Pages\CreateEvent::route("/create"),
         ];
     }
 
-    //Hide this resource from storekeepers
     public static function shouldRegisterNavigation(): bool
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
     // Hide the navigation only for storekeeper, show for others
     if ($user instanceof User && $user->hasAnyRole(['storekeeper', 'Storekeeper'])) {

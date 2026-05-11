@@ -35,6 +35,18 @@ class StockMovement extends Model
         return $this->hasMany(ItemReturn::class);
     }
 
+    public function getEventNameAttribute()
+{
+    return $this->event_name ?? $this->requisition?->event?->event_name;
+}
+
+
+public function getEventDateAttribute()
+{
+    return $this->requisition?->event?->event_date;
+}
+
+
     
 }
 

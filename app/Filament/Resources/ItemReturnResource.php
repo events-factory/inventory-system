@@ -13,6 +13,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\DB;
 
 class ItemReturnResource extends Resource
 {
@@ -35,68 +36,44 @@ class ItemReturnResource extends Resource
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
+            ->query(function () {
+                // Group returns by event and join events table to get event details
+                return ItemReturn::selectRaw('
+                    stock_movements.requisition_id,
+                    requisitions.event_id,
+                    events.event_name,
+                    events.event_date,
+                    SUM(item_returns.good_condition) as total_good,
+                    SUM(item_returns.damaged_quantity) as total_damaged,
+                    SUM(item_returns.lost_quantity) as total_lost,
+                    MAX(item_returns.created_at) as returned_at
+                ')
+                ->join('stock_movements', 'item_returns.stock_movement_id', '=', 'stock_movements.id')
+                ->join('requisitions', 'stock_movements.requisition_id', '=', 'requisitions.id')
+                ->join('events', 'requisitions.event_id', '=', 'events.id')
+                ->groupBy('requisitions.event_id', 'stock_movements.requisition_id', 'events.event_name', 'events.event_date');
+            })
             ->columns([
-                TextColumn::make('stockMovement.item.name')->label('Item Name'),
-                TextColumn::make('stockMovement.requisition.event.event_name')->label('Event'),
-                TextColumn::make('stockMovement.requisition.event.event_date')->label('Event Date'),
-                TextColumn::make('good_condition')->label('Good'),
-                TextColumn::make('damaged_quantity')->label('Damaged'),
-                TextColumn::make('lost_quantity')->label('Lost'),
-                TextColumn::make('created_at')->label('Returned On')->dateTime(),
-            ])->headerActions([
-                Action::make('Export PDF')
-                    ->label('Export PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function ($livewire) {
-                        $records = $livewire->getFilteredTableQuery()->get();
-            
-                        $pdf = Pdf::loadView('exports.item-returns', [
-                            'returns' => $records
-                        ]);
-            
-                        return response()->streamDownload(
-                            fn () => print($pdf->output()),
-                            'item-returns-report.pdf'
-                        );
-                    }),
+                TextColumn::make('event_name')->label('Event Name'),
+                TextColumn::make('event_date')->label('Event Date')->date(),
+                TextColumn::make('total_good')->label('Good'),
+                TextColumn::make('total_damaged')->label('Damaged'),
+                TextColumn::make('total_lost')->label('Lost'),
+                TextColumn::make('returned_at')->label('Last Returned')->dateTime(),
             ])
-            ->filters([
-                SelectFilter::make('item_id')
-                    ->label('Item')
-                    ->relationship('item', 'name'),
-            
-                SelectFilter::make('stock_movement_id')
-                    ->label('Event')
-                    ->relationship('stockMovement.requisition.event', 'event_name'),
-            
-                // Date range filter
-                Filter::make('Returned Date')
-                    ->form([
-                        DatePicker::make('from'),
-                        DatePicker::make('until'),
-                    ])
-                    ->query(function ($query, array $data) {
-                        return $query
-                            ->when($data['from'], fn ($q) => $q->whereDate('created_at', '>=', $data['from']))
-                            ->when($data['until'], fn ($q) => $q->whereDate('created_at', '<=', $data['until']));
-                    }),
-            
-                // Show only damaged returns
-                Filter::make('Only Damaged Items')
-                    ->query(fn ($query) => $query->where('damaged_quantity', '>', 0)),
-            
-                // Show only lost returns
-                Filter::make('Only Lost Items')
-                    ->query(fn ($query) => $query->where('lost_quantity', '>', 0)),
+            ->actions([
+                Action::make('view')
+                    ->label('View Items')
+                    ->url(fn ($record) => static::getUrl('view', ['event' => $record->event_id]))
             ])
-            
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('returned_at', 'desc');
     }
 
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListItemReturns::route('/'),
-        ];
-    }
+public static function getPages(): array
+{
+    return [
+        'index' => Pages\ListItemReturns::route('/'),
+        'view' => Pages\ViewItemReturnsByEvent::route('/view/{event}'),
+    ];
+}
 }
