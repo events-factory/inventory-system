@@ -20,11 +20,6 @@ class ViewApprovedEvent extends ViewRecord implements HasTable
 
     protected static string $resource = ApprovedEventResource::class;
 
-    public function getView(): string
-    {
-        return 'internalPages::view-approved-event';
-    }
-    
     public function getTitle(): string
     {
     return 'Approved Stock for Event: ' . ($this->record->event_name ?? 'Unknown');

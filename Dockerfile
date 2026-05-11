@@ -1,9 +1,7 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
-# Set working directory
-WORKDIR /var/www
+WORKDIR /var/www/html
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -12,21 +10,18 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     git \
     unzip \
+    mariadb-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql zip intl
+    && docker-php-ext-install gd pdo pdo_mysql zip intl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy the application code
 COPY . .
 
-# Install Laravel dependencies
 RUN composer install --no-interaction --optimize-autoloader --prefer-dist
+RUN chown -R www-data:www-data /var/www/html
 
-# Set Laravel file permissions
-RUN chown -R www-data:www-data /var/www
+EXPOSE 8000
 
-EXPOSE 9000
-
-CMD ["php-fpm"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
