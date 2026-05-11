@@ -168,17 +168,18 @@ class EventResource extends Resource
     {
         $user = Auth::user();
 
-        if ($user instanceof User && $user->hasRole("storekeeper")) {
-            return false;
-        }
+    // Hide the navigation only for storekeeper, show for others
+    if ($user instanceof User && $user->hasAnyRole(['storekeeper', 'Storekeeper'])) {
+        return false;
+    }
 
-        return true;
-    }
-    // Permissions
-    public static function canViewAny(): bool
-    {
-        return Auth::check();
-    }
+    return true;
+}
+
+public static function canViewAny(): bool
+{
+    return Auth::check();
+}
 
     //Permission to create Items
     public static function canCreate(): bool
@@ -200,6 +201,6 @@ class EventResource extends Resource
     {
         $user = Auth::user();
         return $user instanceof User &&
-            $user->hasAnyRole(["admin", "operator"]);
+            $user->hasAnyRole(["admin", "Admin", "operator", "Operator"]);
     }
 }

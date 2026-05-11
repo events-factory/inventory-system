@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RequisitionApprovedMail;
+use Illuminate\Database\Eloquent\Builder;
 
 class RequisitionResource extends Resource
 {
@@ -175,7 +176,7 @@ class RequisitionResource extends Resource
     $user = Auth::user();
 
     // Hide the navigation only for storekeeper, show for others
-    if ($user instanceof User && $user->hasRole('storekeeper')) {
+    if ($user instanceof User && $user->hasAnyRole(['storekeeper', 'Storekeeper'])) {
         return false;
     }
 
@@ -207,6 +208,6 @@ class RequisitionResource extends Resource
     protected static function userCanManageRequisitions(): bool
     {
         $user = Auth::user();
-        return $user instanceof User && $user->hasAnyRole(['admin', 'operator']);
+        return $user instanceof User && $user->hasAnyRole(['admin', 'Admin', 'operator', 'Operator']);
     }
 }

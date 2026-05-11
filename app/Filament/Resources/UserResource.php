@@ -114,35 +114,35 @@ class UserResource extends Resource
 {
     $user = Auth::user();
 
-    return $user instanceof User && $user->hasRole('admin');
+    return $user instanceof User && $user->hasAnyRole(['admin', 'Admin']);
 }
 
 public static function canViewAny(): bool
 {
     $user = Auth::user();
 
-    return $user instanceof User && $user->hasRole('admin');
+    return $user instanceof User && $user->hasAnyRole(['admin', 'Admin']);
 }
 
 public static function canCreate(): bool
 {
     $user = Auth::user();
 
-    return $user instanceof User && $user->hasRole('admin');
+    return $user instanceof User && $user->hasAnyRole(['admin', 'Admin']);
 }
 
 public static function canEdit(Model $record): bool
 {
    $user = Auth::user();
 
-    return $user instanceof User && $user->hasRole('admin');
+    return $user instanceof User && $user->hasAnyRole(['admin', 'Admin']);
 }
 
 public static function canDelete(Model $record): bool
 {
     $user = Auth::user();
 
-    return $user instanceof User && $user->hasRole('admin');
+    return $user instanceof User && $user->hasAnyRole(['admin', 'Admin']);
 }
 
 }
