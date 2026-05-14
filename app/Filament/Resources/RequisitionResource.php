@@ -39,11 +39,6 @@ class RequisitionResource extends Resource
                 ->label("Event Name")
                 ->required(),
 
-            Select::make("event_id")
-                ->relationship("event", "event_date")
-                ->label("Event Date")
-                ->required(),
-
             DatePicker::make("expected_pickup_date")
                 ->required()
                 ->label("Expected Pickup Date"),
@@ -152,6 +147,11 @@ class RequisitionResource extends Resource
         return [
                 //
             ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['event', 'items']);
     }
 
     public static function getPages(): array
