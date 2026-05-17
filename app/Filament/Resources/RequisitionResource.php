@@ -54,7 +54,7 @@ class RequisitionResource extends Resource
                     ->schema([
                         Select::make("item_id")
                             ->label("Item")
-                            ->options(\App\Models\Item::pluck("name", "id"))
+                            ->relationship("item", "name")
                             ->searchable()
                             ->required(),
 
@@ -73,6 +73,7 @@ class RequisitionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['event', 'items']))
             ->columns([
                 TextColumn::make("event.event_name")->label("Event"),
                 TextColumn::make("status")
@@ -121,7 +122,14 @@ class RequisitionResource extends Resource
                              'action_date' => now(),
                          ]);
                      }
-                 
+                     // Queue email to storekeepers
+                        $storekeepers = User::role('storekeeper','operator')->get();
+
+                        foreach ($storekeepers as $storekeeper) {
+                            Mail::to($storekeeper->email)->queue(new RequisitionApprovedMail($record));
+                        }
+                    
+                        // Notify the user                 
                      Notification::make()
                          ->title('Requisition approved and stock movements created.')
                          ->success()

@@ -22,4 +22,9 @@ class ListItemReturns extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
+
+    public function getTableRecordKey($record): string
+{
+    return (string) $record->event_id;
+}
 }
