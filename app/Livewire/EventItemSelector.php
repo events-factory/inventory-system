@@ -130,9 +130,22 @@ class EventItemSelector extends Component
             return;
         }
 
-        if (collect($this->addedItems)->pluck('item_id')->contains($item->id)) {
-            $this->addError('selectedItem', 'This item is already added.');
-            return;
+        // Check if item is already in the list, if so increment its quantity
+        foreach ($this->addedItems as &$addedItem) {
+            if ($addedItem['item_id'] === $item->id) {
+                $newQuantity = $addedItem['quantity'] + $this->quantity;
+                if ($newQuantity > $item->quantity) {
+                    $this->addError('quantity', "Cannot add {$this->quantity} more. Only {$item->quantity} item(s) available in total (already added: {$addedItem['quantity']}).");
+                    return;
+                }
+                $addedItem['quantity'] = $newQuantity;
+                $addedItem['available_quantity'] = $item->quantity;
+                $this->dispatch('updateItems', addedItems: $this->addedItems);
+
+                $this->selectedItem = null;
+                $this->quantity = 1;
+                return;
+            }
         }
 
         $this->addedItems[] = [
@@ -141,6 +154,7 @@ class EventItemSelector extends Component
             'item_id' => $item->id,
             'item_name' => $item->name,
             'quantity' => $this->quantity,
+            'available_quantity' => $item->quantity,
         ];
 
         $this->dispatch('updateItems', addedItems: $this->addedItems);
@@ -150,13 +164,65 @@ class EventItemSelector extends Component
         $this->quantity = 1;
     }
 
+    public function incrementQuantity(int $index): void
+    {
+        if (!isset($this->addedItems[$index])) return;
+
+        $itemId = $this->addedItems[$index]['item_id'];
+        $item = Item::find($itemId);
+
+        if (!$item) return;
+
+        if ($this->addedItems[$index]['quantity'] >= $item->quantity) {
+            return;
+        }
+
+        $this->addedItems[$index]['quantity']++;
+        $this->addedItems[$index]['available_quantity'] = $item->quantity;
+        $this->dispatch('updateItems', addedItems: $this->addedItems);
+    }
+
+    public function decrementQuantity(int $index): void
+    {
+        if (!isset($this->addedItems[$index])) return;
+
+        if ($this->addedItems[$index]['quantity'] <= 1) {
+            return;
+        }
+
+        $this->addedItems[$index]['quantity']--;
+        $this->dispatch('updateItems', addedItems: $this->addedItems);
+    }
+
+    public function validateItemQuantity(int $index): void
+    {
+        if (!isset($this->addedItems[$index])) return;
+
+        $quantity = (int) $this->addedItems[$index]['quantity'];
+        $itemId = $this->addedItems[$index]['item_id'];
+        $item = Item::find($itemId);
+
+        if (!$item) return;
+
+        if ($quantity < 1) {
+            $quantity = 1;
+        }
+
+        if ($quantity > $item->quantity) {
+            $quantity = $item->quantity;
+        }
+
+        $this->addedItems[$index]['quantity'] = $quantity;
+        $this->addedItems[$index]['available_quantity'] = $item->quantity;
+        $this->dispatch('updateItems', addedItems: $this->addedItems);
+    }
+
     public function removeItem(int $index): void
     {
         unset($this->addedItems[$index]);
         $this->addedItems = array_values($this->addedItems);
 
         $this->dispatch('updateItems', addedItems: $this->addedItems);
-
     }
 
     public function render()
