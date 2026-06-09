@@ -10,6 +10,10 @@ class ItemsChart extends ChartWidget
 {
     protected static ?string $heading = 'Items Created per Month';
 
+    protected int | string | array $columnSpan = 1;
+
+    protected static ?int $sort = 1;
+
     protected function getData(): array
     {
         // Query to get count of items grouped by month

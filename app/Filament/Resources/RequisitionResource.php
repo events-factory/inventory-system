@@ -78,6 +78,7 @@ class RequisitionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['event', 'items']))
             ->columns([
                 TextColumn::make("event.event_name")->label("Event"),
@@ -128,7 +129,7 @@ class RequisitionResource extends Resource
                          ]);
                      }
                      // Queue email to storekeepers
-                        $storekeepers = User::role('storekeeper','operator')->get();
+                        $storekeepers = User::role(['storekeeper', 'operator'])->get();
 
                         foreach ($storekeepers as $storekeeper) {
                             Mail::to($storekeeper->email)->queue(new RequisitionApprovedMail($record));

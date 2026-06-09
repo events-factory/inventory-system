@@ -93,6 +93,7 @@ class ItemResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['category', 'subcategory']))
             ->columns([
                 TextColumn::make('id')->sortable(),
