@@ -96,7 +96,29 @@
         @foreach ($addedItems as $index => $item)
             <tr wire:key="added-{{ $item['item_id'] }}" class="odd:bg-white even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700">
                 <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">{{ $item['item_name'] }}</td>
-                <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">{{ $item['quantity'] }}</td>
+                <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">
+                    <div class="flex items-center space-x-1">
+                        <button type="button" wire:click="decrementQuantity({{ $index }})" 
+                            class="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50"
+                            {{ $item['quantity'] <= 1 ? 'disabled' : '' }}>
+                            -
+                        </button>
+                        <input type="number" min="1" max="{{ $item['available_quantity'] ?? 9999 }}" 
+                            wire:model.live="addedItems.{{ $index }}.quantity" 
+                            wire:change="validateItemQuantity({{ $index }})"
+                            class="w-16 text-center rounded border border-gray-300 bg-white text-black dark:bg-gray-800 dark:text-white dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                        <button type="button" wire:click="incrementQuantity({{ $index }})" 
+                            class="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50"
+                            {{ $item['quantity'] >= ($item['available_quantity'] ?? 9999) ? 'disabled' : '' }}>
+                            +
+                        </button>
+                        @if(isset($item['available_quantity']))
+                            <span class="text-xs text-gray-500 dark:text-gray-400 pl-2">
+                                / {{ $item['available_quantity'] }} available
+                            </span>
+                        @endif
+                    </div>
+                </td>
                 <td class="border border-gray-300 dark:border-gray-600 px-4 py-2">
                     <button wire:click="removeItem({{ $index }})"
                         class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
