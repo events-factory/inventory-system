@@ -12,7 +12,7 @@ class EditRequisition extends EditRecord
 
     public function getTitle(): string
     {
-        return 'Requisition for ' . $this->record->event->event_name;
+        return 'Requisition for ' . optional($this->record->event)->event_name;
     }
 
     protected function getHeaderActions(): array
