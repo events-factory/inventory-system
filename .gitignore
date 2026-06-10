@@ -20,4 +20,4 @@ yarn-error.log
 /.vscode
 /.zed
 database/migrations/completed/*
-.env
+config.bat
