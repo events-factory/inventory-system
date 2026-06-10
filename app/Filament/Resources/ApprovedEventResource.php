@@ -13,6 +13,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
 
+use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\Section as InfoSection;
+
 class ApprovedEventResource extends Resource
 {
     protected static ?string $model = Event::class;
@@ -26,6 +30,21 @@ class ApprovedEventResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with('requisition.stockMovements.item');
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                InfoSection::make('Event Details')
+                    ->schema([
+                        TextEntry::make('event_name')->label('Event Name'),
+                        TextEntry::make('event_date')->label('Event Date')->date(),
+                        TextEntry::make('event_location')->label('Event Location'),
+                        TextEntry::make('responsible_person_name')->label('Responsible Person'),
+                    ])
+                    ->columns(2),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -80,7 +99,7 @@ class ApprovedEventResource extends Resource
         ->actions([
             Tables\Actions\ViewAction::make(),
         ])
-        ->defaultSort('event_date', 'desc') // Optional: sort newest first
+        ->defaultSort('created_at', 'desc') // Sort newest first
         ->searchDebounce(500); // Optional: adds a slight delay to reduce DB load
 }
 
