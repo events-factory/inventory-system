@@ -5,9 +5,7 @@ use App\Models\Event;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/admin');
 
 Route::get('/approved-events/{event}/report', function (Event $event) {
     $movements = \App\Models\StockMovement::whereHas('requisition', function ($query) use ($event) {
