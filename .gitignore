@@ -17,7 +17,12 @@ yarn-error.log
 /.fleet
 /.idea
 /.nova
-/.vscode
 /.zed
 database/migrations/completed/*
 config.bat
+
+# security hardening: env + editor dirs
+!.env.example
+!.env.sample
+!.env.template
+.claude/
